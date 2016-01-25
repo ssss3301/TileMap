@@ -242,6 +242,8 @@ std::set<TileData*> RouteAlgorithm::nearestNeighborWalkAbleTile(TileData* tile)
 			std::set<TileData*> tmpvec = nearestNeighborWalkAbleTile(tile);
 			neighbors.insert(tmpvec.begin(), tmpvec.end());
 			m_neighborCloseList.push_back(tile);
+			if (neighbors.size() > 0)
+				break;
 		}
 	}
 
