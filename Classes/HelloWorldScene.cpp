@@ -33,7 +33,14 @@ bool HelloWorld::init()
 
 	loadMap("gamemap.tmx");
  	loadGamePlayer();
- 	initRouteAlgorithm();
+ 	initTileDatas();
+
+	//初始化寻路算法的地图数据
+	Size mapsize = m_gamemap->getMapSize();
+	m_routeAlgorithm = new RouteAlgorithm(mapsize.width, mapsize.height, m_tileDatas);
+	m_routeAlgorithm->setAllowDiagonal(true);//允许对角线
+	m_routeAlgorithm->setAllowCrossConrner(false);//不允许穿越拐角
+	assert(m_routeAlgorithm != NULL, "m_routeAlgorithm == NULL");
 
 	scheduleUpdate();
 	setTouchEnabled(true);
@@ -72,9 +79,10 @@ void HelloWorld::loadMap(const std::string& mapName)
 {
 	String* mapXml = String::createWithContentsOfFile("gamemap.tmx");
 	m_gamemap = TMXTiledMap::createWithXML(mapXml->getCString(), "");
-// 	TMXLayer* layer = m_gamemap->layerNamed("block");
-// 	if (layer != NULL)
-// 		layer->setVisible(false);
+	assert(m_gamemap, "TMXTiledMap Create Failed!");
+	TMXLayer* layer = m_gamemap->layerNamed("block");
+	if (layer != NULL)
+		layer->setVisible(false);
 
 	this->addChild(m_gamemap);
 }
@@ -194,7 +202,7 @@ TileData* HelloWorld::tileDataByTileCoordinate(const cocos2d::Vec2& vec)
 	return NULL;
 }
 
-void HelloWorld::initRouteAlgorithm()
+void HelloWorld::initTileDatas()
 {
 	Size mapsize = m_gamemap->getMapSize();
 	TMXLayer* layer = m_gamemap->layerNamed("block");
@@ -218,10 +226,6 @@ void HelloWorld::initRouteAlgorithm()
 			m_tileDatas.push_back(data);
 		}
 	}
-
-	m_routeAlgorithm = new RouteAlgorithm(mapsize.width, mapsize.height, m_tileDatas);
-	m_routeAlgorithm->setAllowDiagonal(true);
-	assert(m_routeAlgorithm != NULL, "m_routeAlgorithm == NULL");
 }
 
 void HelloWorld::createActionChain(const std::vector<TileData*>& path)

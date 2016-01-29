@@ -57,7 +57,7 @@ void RouteAlgorithm::findingPath(TileData* startTile, TileData* endTile)
 	m_openList.clear();
 	m_closeList.clear();
 
-	startTile->setParent(nullptr);
+	startTile->setParent(NULL);
 	m_openList.push_back(startTile);
 	do
 	{

@@ -33,7 +33,7 @@ private:
 	void setViewPointCenter(const cocos2d::Vec2& position);
 	cocos2d::Vec2 convertToTileCoordinate(const cocos2d::Vec2& vec);
 	TileData* tileDataByTileCoordinate(const cocos2d::Vec2& vec);
-	void initRouteAlgorithm();
+	void initTileDatas();
 	void createActionChain(const std::vector<TileData*>& path);
 		
 #ifdef _DEBUG
