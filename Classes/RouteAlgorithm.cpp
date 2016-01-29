@@ -1,14 +1,14 @@
 #include "RouteAlgorithm.h"
 
-RouteAlgorithm::RouteAlgorithm(bool diagonalRule) :m_diagonalRule(diagonalRule)
+RouteAlgorithm::RouteAlgorithm(bool allowDiagonal) : m_allowDiagonal(allowDiagonal)
 {
 	m_openList.clear();
 	m_closeList.clear();
 }
 
 RouteAlgorithm::RouteAlgorithm(int width, int height, const std::vector<TileData*> mapTileDatas
-	, bool diagonalRule) : m_mapWidth(width), m_mapHeight(height), m_tileDatas(mapTileDatas)
-						, m_diagonalRule(diagonalRule)
+	, bool allowDiagonal) : m_mapWidth(width), m_mapHeight(height), m_tileDatas(mapTileDatas)
+						, m_allowDiagonal(allowDiagonal)
 {
 	m_openList.clear();
 	m_closeList.clear();
@@ -18,6 +18,27 @@ RouteAlgorithm::~RouteAlgorithm()
 {
 
 }
+
+void RouteAlgorithm::setAllowDiagonal(bool allowDiagonal)
+{
+	m_allowDiagonal = allowDiagonal;
+}
+
+bool RouteAlgorithm::allowDiagonal() const
+{
+	return m_allowDiagonal;
+}
+
+void RouteAlgorithm::setAllowCrossConrner(bool allowCrossConrner)
+{
+	m_allowCrossCorner = allowCrossConrner;
+}
+
+bool RouteAlgorithm::allowCrossConrner() const
+{
+	return m_allowCrossCorner;
+}
+
 
 void RouteAlgorithm::setMapSize(int width, int height)
 {
@@ -32,30 +53,58 @@ void RouteAlgorithm::setTileDatas(std::vector<TileData*> mapTileDatas)
 
 void RouteAlgorithm::findingPath(TileData* startTile, TileData* endTile)
 {
-	m_neighborCloseList.clear();
+	m_route.clear();
+	m_openList.clear();
+	m_closeList.clear();
 
-	std::set<TileData*> nearestNighbor;
-	if (!endTile->walkAble())
+	startTile->setParent(nullptr);
+	m_openList.push_back(startTile);
+	do
 	{
-		nearestNighbor = nearestNeighborWalkAbleTile(endTile);
-	}
+		TileData* tile = (TileData*)m_openList[0];
+		m_openList.erase(m_openList.begin());
+		m_closeList.push_back(tile);
+		if (tile == endTile)
+		{
+			constructPath(tile);
+			break;
+		}
 
-	std::vector<std::vector<TileData*>> paths;
+		std::vector<TileData*> neighbors;
+		Neighbor(tile, &neighbors);
+		for each (TileData* neighborTileData in neighbors)
+		{
+			std::vector<TileData*>::iterator closeListIter = std::find(m_closeList.begin(), m_closeList.end()
+				, neighborTileData);
+			if (!neighborTileData || closeListIter != m_closeList.end())
+				continue;
 
-	std::set<TileData*>::const_iterator iter = nearestNighbor.begin();
-	while (iter != nearestNighbor.end())
-	{
-		GetRoute(startTile, *iter);
-		paths.push_back(m_route);
-		++iter;
-	}
+			int cost = moveCost(tile, neighborTileData);
+			int hscore = computeHScore(neighborTileData, endTile);
+			std::vector<TileData*>::iterator openListIter = std::find(m_openList.begin(), m_openList.end()
+				, neighborTileData);
+			if (openListIter == m_openList.end())
+			{
+				neighborTileData->setGscore(tile->gscore() + cost);
+				neighborTileData->setHscore(hscore);
+				neighborTileData->setParent(tile);
+				insertToOpenList(neighborTileData);
+			}
+			else
+			{
+				if (tile->gscore() + cost < neighborTileData->gscore())
+				{
+					std::remove(m_openList.begin(), m_openList.end(), neighborTileData);
+					neighborTileData->setParent(tile);
+					neighborTileData->setGscore(tile->gscore() + cost);
+					insertToOpenList(neighborTileData);
+				}
+			}
 
-	m_route = paths[0];
-	for (int index = 1; index < paths.size(); ++index)
-	{
-		if (m_route.size() > paths[index].size())
-			m_route = paths[index];
-	}
+		}
+
+	} while (m_openList.size() > 0);
+
 }
 
 TileData* RouteAlgorithm::getTileDataByPosition(const std::pair<float, float>& position)
@@ -72,37 +121,61 @@ TileData* RouteAlgorithm::getTileDataByPosition(const std::pair<float, float>& p
 	return nullptr;
 }
 
-void RouteAlgorithm::Neighbor(const TileData* tile, std::vector<std::string>* neighbors)
+void RouteAlgorithm::Neighbor(const TileData* tile, std::vector<TileData*>* neighbors)
 {
 	int x = tile->position().first;
 	int y = tile->position().second;
 
+	TileData* left = NULL;
+	TileData* right = NULL;
+	TileData* bottom = NULL;
+	TileData* top = NULL;
 	//left
 	if (x - 1 >= 0)
-		neighbors->push_back(createStringWithFormat("%d, %d", (int)(x - 1), (int)y));
+	{
+		left = getTileDataByPosition(std::make_pair(x - 1, y));
+		neighbors->push_back(left);
+	}
 	//right
 	if (x + 1 < m_mapWidth)
-		neighbors->push_back(createStringWithFormat("%d, %d", (int)(x + 1), (int)y));
+	{
+		right = getTileDataByPosition(std::make_pair(x + 1, y));
+		neighbors->push_back(right);
+	}
 	//top
 	if (y - 1 >= 0)
-		neighbors->push_back(createStringWithFormat("%d, %d", (int)x, (int)(y - 1)));
+	{
+		top = getTileDataByPosition(std::make_pair(x, y - 1));
+		neighbors->push_back(top);
+	}
+
 	//bottom
 	if (y + 1 < m_mapHeight)
-		neighbors->push_back(createStringWithFormat("%d, %d", (int)x, (int)(y + 1)));
-	if (m_diagonalRule)
+	{
+		bottom = getTileDataByPosition(std::make_pair(x, y + 1));
+		neighbors->push_back(bottom);
+	}
+
+	if (m_allowDiagonal)
 	{
 		//left-top
 		if (x - 1 >= 0 && y - 1 >= 0);
-		neighbors->push_back(createStringWithFormat("%d, %d", (int)(x - 1), (int)(y - 1)));
+		{
+			if ((left == NULL || left->walkAble()) && (top == NULL || top->walkAble()))
+				neighbors->push_back(getTileDataByPosition(std::make_pair(x - 1, y - 1)));
+		}
 		//left-bottom
 		if (x - 1 >= 0 && y + 1 < m_mapHeight)
-			neighbors->push_back(createStringWithFormat("%d, %d", (int)(x - 1), (int)(y + 1)));
+			if ((left == NULL || left->walkAble()) && (bottom == NULL || bottom->walkAble()))
+				neighbors->push_back(getTileDataByPosition(std::make_pair(x - 1, y + 1)));
 		//right-top
 		if (x + 1 < m_mapWidth && y - 1 >= 0)
-			neighbors->push_back(createStringWithFormat("%d, %d", (int)(x + 1), (int)(y - 1)));
+			if((right == NULL || right->walkAble()) && (top == NULL || top->walkAble()))
+				neighbors->push_back(getTileDataByPosition(std::make_pair(x + 1, y - 1)));
 		//right-bottom
 		if (x + 1 < m_mapWidth && y + 1 < m_mapHeight)
-			neighbors->push_back(createStringWithFormat("%d, %d", (int)(x + 1), (int)(y + 1)));
+			if ((right == NULL || right->walkAble()) && (bottom == NULL || bottom->walkAble()))
+				neighbors->push_back(getTileDataByPosition(std::make_pair(x + 1, y + 1)));
 	}
 }
 
@@ -168,23 +241,40 @@ int RouteAlgorithm::moveCost(const TileData* originTile, const TileData* destina
 	float sum = std::pow(destination.first - origin.first, 2.0f)
 		+ std::pow(destination.second - origin.second, 2.0f);
 
-	return (int)(std::sqrtf(sum) * 10) - destinationTile->priority();
+	return (int)(std::sqrtf(sum) * 10) - destinationTile->priority() + destinationTile->extraHScore();
 }
 
 void RouteAlgorithm::constructPath(const TileData* endTile)
 {
 	if (endTile == nullptr) return;
 
-	if(endTile->walkAble())
-		m_route.push_back((TileData*)endTile);
+	std::vector<TileData*> tmp_route;
+	tmp_route.push_back((TileData*)endTile);
 
 	TileData* parent = endTile->parent();
-	while (parent != nullptr)
+	while (parent != NULL)
 	{
 		TileData* tmp = parent;
 		parent = parent->parent();
-		m_route.push_back(tmp);
+		tmp_route.push_back(tmp);
 	}
+
+	std::vector<TileData*>::iterator iter = tmp_route.begin();
+	while (iter != tmp_route.end())
+	{
+		if (!(*iter)->walkAble())
+		{
+			++iter;
+			break;
+		}
+		++iter;
+	}
+
+	if (iter != tmp_route.end())
+		m_route.insert(m_route.begin(), iter, tmp_route.end());
+	else
+		m_route = tmp_route;
+
 }
 
 std::string RouteAlgorithm::createStringWithFormat(const char* format, ...)
@@ -204,6 +294,7 @@ std::vector<TileData*> RouteAlgorithm::path() const
 	return m_route;
 }
 
+/*
 std::set<TileData*> RouteAlgorithm::nearestNeighborWalkAbleTile(TileData* tile)
 {
 	std::set<TileData*> neighbors;
@@ -249,62 +340,4 @@ std::set<TileData*> RouteAlgorithm::nearestNeighborWalkAbleTile(TileData* tile)
 
 	return neighbors;
 }
-
-void RouteAlgorithm::GetRoute(TileData* startTile, TileData* endTile)
-{
-	m_route.clear();
-	m_openList.clear();
-	m_closeList.clear();
-
-	startTile->setParent(nullptr);
-	m_openList.push_back(startTile);
-	do
-	{
-		TileData* tile = (TileData*)m_openList[0];
-		m_openList.erase(m_openList.begin());
-		m_closeList.push_back(tile);
-		if (tile == endTile)
-		{
-			constructPath(tile);
-			break;
-		}
-
-		std::vector<std::string> neighbors;
-		Neighbor(tile, &neighbors);
-		for each (std::string str in neighbors)
-		{
-			std::string* pstr = &str;
-			TileData* neighborTileData = getTileDataByPosition(String2Pair(pstr));
-			std::vector<TileData*>::iterator closeListIter = std::find(m_closeList.begin(), m_closeList.end()
-				, neighborTileData);
-			if (!neighborTileData || (!neighborTileData->walkAble() && neighborTileData != endTile)
-				|| closeListIter != m_closeList.end())
-				continue;
-
-			int cost = moveCost(tile, neighborTileData);
-			int hscore = computeHScore(neighborTileData, endTile);
-			std::vector<TileData*>::iterator openListIter = std::find(m_openList.begin(), m_openList.end()
-				, neighborTileData);
-			if (openListIter == m_openList.end())
-			{
-				neighborTileData->setGscore(tile->gscore() + cost);
-				neighborTileData->setHscore(hscore);
-				neighborTileData->setParent(tile);
-				insertToOpenList(neighborTileData);
-			}
-			else
-			{
-				if (tile->gscore() + cost < neighborTileData->gscore())
-				{
-					std::remove(m_openList.begin(), m_openList.end(), neighborTileData);
-					neighborTileData->setParent(tile);
-					neighborTileData->setGscore(tile->gscore() + cost);
-					insertToOpenList(neighborTileData);
-				}
-			}
-
-		}
-
-	} while (m_openList.size() > 0);
-
-}
+*/

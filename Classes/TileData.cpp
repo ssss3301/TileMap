@@ -3,13 +3,13 @@
 USING_NS_CC;
 
 TileData::TileData():m_bWalkable(true), m_parent(NULL), m_isEnd(false)
-		, m_GScore(0), m_HScore(0), m_priority(0)
+		, m_GScore(0), m_HScore(0), m_priority(0), m_extraHScore(0)
 {
 
 }
 
 TileData::TileData(const std::pair<float, float>& position) : m_bWalkable(true), m_parent(NULL)
-	, m_isEnd(false), m_GScore(0), m_HScore(0), m_priority(0)
+	, m_isEnd(false), m_GScore(0), m_HScore(0), m_priority(0), m_extraHScore(0)
 {
 	m_position = position;
 }
@@ -91,6 +91,17 @@ int TileData::hscore() const
 {
 	return m_HScore;
 }
+
+void TileData::setExtraHScore(int extraScore)
+{
+	m_extraHScore = extraScore;
+}
+
+int TileData::extraHScore() const
+{
+	return m_extraHScore;
+}
+
 
 int TileData::fscore() const
 {

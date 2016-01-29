@@ -72,9 +72,9 @@ void HelloWorld::loadMap(const std::string& mapName)
 {
 	String* mapXml = String::createWithContentsOfFile("gamemap.tmx");
 	m_gamemap = TMXTiledMap::createWithXML(mapXml->getCString(), "");
-	TMXLayer* layer = m_gamemap->layerNamed("block");
-	if (layer != NULL)
-		layer->setVisible(false);
+// 	TMXLayer* layer = m_gamemap->layerNamed("block");
+// 	if (layer != NULL)
+// 		layer->setVisible(false);
 
 	this->addChild(m_gamemap);
 }
@@ -135,10 +135,7 @@ void HelloWorld::onTouchesEnded(const std::vector<cocos2d::Touch*>& touches, coc
 		if (path.size() > 0)//当前位置可以达到
 		{
 			//输出路径
-			drawPath(path);
-
-			// 		m_player->setPosition(convertToNodeSpace(touch->getLocation()));
-			// 		setViewPointCenter(m_player->getPosition());
+			//drawPath(path);
 			createActionChain(path);
 		}
 	}
@@ -216,12 +213,14 @@ void HelloWorld::initRouteAlgorithm()
 				if (property["block"].asString() == "true")
 					data->setWalkAble(false);
 				data->setPriority(property["Priority"].asInt());
+				data->setExtraHScore(property["extra"].asInt());
 			}
 			m_tileDatas.push_back(data);
 		}
 	}
 
 	m_routeAlgorithm = new RouteAlgorithm(mapsize.width, mapsize.height, m_tileDatas);
+	m_routeAlgorithm->setAllowDiagonal(true);
 	assert(m_routeAlgorithm != NULL, "m_routeAlgorithm == NULL");
 }
 

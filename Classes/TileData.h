@@ -31,6 +31,9 @@ public:
 	void setHscore(int score);
 	int hscore() const;
 
+	void setExtraHScore(int extraScore);
+	int extraHScore() const;
+
 	int fscore() const;
 
 private:
@@ -41,4 +44,5 @@ private:
 	bool						m_isEnd;
 	int							m_GScore;
 	int							m_HScore;
+	int							m_extraHScore;
 };
