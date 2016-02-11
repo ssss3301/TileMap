@@ -72,7 +72,7 @@ void RouteAlgorithm::findingPath(TileData* startTile, TileData* endTile)
 
 		std::vector<TileData*> neighbors;
 		Neighbor(tile, &neighbors);
-		for each (TileData* neighborTileData in neighbors)
+        for (TileData* neighborTileData : neighbors)
 		{
 			std::vector<TileData*>::iterator closeListIter = std::find(m_closeList.begin(), m_closeList.end()
 				, neighborTileData);
@@ -109,7 +109,7 @@ void RouteAlgorithm::findingPath(TileData* startTile, TileData* endTile)
 
 TileData* RouteAlgorithm::getTileDataByPosition(const std::pair<float, float>& position)
 {
-	for each (TileData* tile in m_tileDatas)
+    for (TileData* tile : m_tileDatas)
 	{
 		if (tile)
 		{
@@ -200,7 +200,7 @@ void RouteAlgorithm::insertToOpenList(TileData* tile)
 	int fscore = tile->fscore();
 
 	int index = 0;
-	for each (TileData* tmp in m_openList)
+    for (TileData* tmp : m_openList)
 	{
 		if (tmp->fscore() >= fscore)
 			break;
@@ -259,19 +259,22 @@ void RouteAlgorithm::constructPath(const TileData* endTile)
 		tmp_route.push_back(tmp);
 	}
 
-	std::vector<TileData*>::iterator iter = tmp_route.begin();
-	while (iter != tmp_route.end())
+    std::vector<TileData*>::reverse_iterator iter = tmp_route.rbegin();
+	while (iter != tmp_route.rend())
 	{
 		if (!(*iter)->walkAble())
-		{
-			++iter;
 			break;
-		}
 		++iter;
 	}
 
-	if (iter != tmp_route.end())
-		m_route.insert(m_route.begin(), iter, tmp_route.end());
+	if (iter != tmp_route.rend())
+    {
+        std::vector<TileData*>::reverse_iterator riter = tmp_route.rbegin();
+        while (riter != iter) {
+            m_route.insert(m_route.begin(), *riter);
+            ++riter;
+        }
+    }
 	else
 		m_route = tmp_route;
 

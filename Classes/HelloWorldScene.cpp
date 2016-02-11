@@ -40,7 +40,7 @@ bool HelloWorld::init()
 	m_routeAlgorithm = new RouteAlgorithm(mapsize.width, mapsize.height, m_tileDatas);
 	m_routeAlgorithm->setAllowDiagonal(true);//允许对角线
 	m_routeAlgorithm->setAllowCrossConrner(false);//不允许穿越拐角
-	assert(m_routeAlgorithm != NULL, "m_routeAlgorithm == NULL");
+	assert(m_routeAlgorithm != NULL);
 
 	scheduleUpdate();
 	setTouchEnabled(true);
@@ -53,7 +53,7 @@ void HelloWorld::onExit()
 	delete m_routeAlgorithm;
 	m_routeAlgorithm = NULL;
 
-	for each(TileData* tile in m_tileDatas)
+    for (TileData* tile : m_tileDatas)
 	{
 		delete tile;
 		tile = NULL;
@@ -79,7 +79,7 @@ void HelloWorld::loadMap(const std::string& mapName)
 {
 	String* mapXml = String::createWithContentsOfFile("gamemap.tmx");
 	m_gamemap = TMXTiledMap::createWithXML(mapXml->getCString(), "");
-	assert(m_gamemap, "TMXTiledMap Create Failed!");
+	assert(m_gamemap);
 	TMXLayer* layer = m_gamemap->layerNamed("block");
 	if (layer != NULL)
 		layer->setVisible(false);
@@ -112,7 +112,7 @@ void HelloWorld::onTouchesBegan(const std::vector<cocos2d::Touch*>& touches, coc
 
 void HelloWorld::onTouchesMoved(const std::vector<Touch*>& touches, Event *unused_event)
 {
-	for each (Touch* touch in touches)
+    for (Touch* touch : touches)
 	{
 		Vec2 delta = touch->getDelta();
 
@@ -132,7 +132,7 @@ void HelloWorld::onTouchesEnded(const std::vector<cocos2d::Touch*>& touches, coc
 
 	m_player->stopAllActions();
 
-	for each (Touch* touch in touches)
+    for (Touch* touch : touches)
 	{
 		Vec2 pos = touch->getLocation();
 		TileData* startTile = tileDataByTileCoordinate(convertToTileCoordinate(m_player->getPosition()));
@@ -189,7 +189,7 @@ Vec2 HelloWorld::convertToTileCoordinate(const cocos2d::Vec2& vec)
 
 TileData* HelloWorld::tileDataByTileCoordinate(const cocos2d::Vec2& vec)
 {
-	for each (TileData* tile in m_tileDatas)
+    for (TileData* tile : m_tileDatas)
 	{
 		if (tile)
 		{
@@ -206,7 +206,7 @@ void HelloWorld::initTileDatas()
 {
 	Size mapsize = m_gamemap->getMapSize();
 	TMXLayer* layer = m_gamemap->layerNamed("block");
-	assert(layer != NULL, "block layer is null");
+	assert(layer != NULL);
 
 	for (int m = 0; m < mapsize.width; ++m)
 	{
